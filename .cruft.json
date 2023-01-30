@@ -1,0 +1,21 @@
+{
+  "template": "https://github.com/42nick/cookie-py-template",
+  "commit": "6b091fb932ce80055c4f148f965c8f751ada1e7c",
+  "checkout": null,
+  "context": {
+    "cookiecutter": {
+      "full_name": "Niklas Hahn",
+      "email": "YourEmail@eg.com",
+      "github_username": "42nick",
+      "project_name": "Stock Alert",
+      "project_slug": "stock_alert",
+      "project_short_description": "This package alerts when a stock related condition is met.",
+      "version": "0.0.0",
+      " ": "Do you want to like your project to sonarcloud.io for code quality analysis? You need to provide the sonarcloud organization in the next step and set the SONAR_TOKEN environment variable.\n[Please press enter to continue]",
+      "additional_vsc_settings": "y",
+      "sonarcloud": "y",
+      "_template": "https://github.com/42nick/cookie-py-template"
+    }
+  },
+  "directory": null
+}
