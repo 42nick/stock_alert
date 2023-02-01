@@ -1,8 +1,11 @@
-import sys
 import argparse
+import sys
 
-from stock_alert.util import get_json_stock_info, get_stock_ticker
+import pandas as pd
 import yfinance as yf
+
+from stock_alert.class_stock_alert import StockAlert
+from stock_alert.util import get_stock_ticker
 
 
 def read_stock_list(path: str) -> list[str]:
@@ -52,10 +55,11 @@ def main() -> None:
     args = parse_args(sys.argv[1:])
     print(args)
 
-    stock_list = read_stock_list(args.path_stock_list)
-    symbols = get_stock_symbols(stock_list)
+    # stock_list = read_stock_list(args.path_stock_list)
+    # symbols = get_stock_symbols(stock_list)
 
-    print(symbols)
+    alert = StockAlert(args.path_stock_list)
+    print(alert.opening_prices)
 
 
 if __name__ == "__main__":
