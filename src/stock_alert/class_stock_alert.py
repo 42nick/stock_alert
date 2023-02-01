@@ -1,4 +1,5 @@
-import re
+import time
+from lib2to3.pytree import Base
 from pathlib import Path
 
 import yfinance
@@ -6,8 +7,25 @@ import yfinance
 from stock_alert.util import get_stock_ticker
 
 
-class AlertRelativeDailyChange:
+class BaseAlert:
+    def __init__(self) -> None:
+        pass
+
+    def need_alert(self, ticker: yfinance.Ticker):
+        raise NotImplementedError
+
+
+class NoAlert(BaseAlert):
+    def __init__(self) -> None:
+        super().__init__()
+
+    def need_alert(self, ticker: yfinance.Ticker):
+        return False
+
+
+class AlertRelativeDailyChange(BaseAlert):
     def __init__(self, rel_change_in_percent: float) -> None:
+        super().__init__()
         self.rel_change_in_percent = rel_change_in_percent
 
         self.lower_bound = 1 - self.rel_change_in_percent
@@ -49,6 +67,28 @@ class StockAlert:
         self.opening_prices = self.get_opening_prices()
 
         # ggf. checking cyclically if the stock price has reached a certain threshold
+
+        # setting up the alerts
+        self.alerts = {symbol: NoAlert() for symbol in self.stock_symbols}
+
+    def spin(self, interval: float) -> None:
+        """
+        This function checks cyclically if the stock price has reached a certain threshold.
+        """
+        while True:
+            alert_triggered = False
+            for symbol, ticker in zip(self.stock_symbols, self.stock_tickers):
+                if self.alerts[symbol].need_alert(ticker):
+                    print(f"Alert for {symbol}: {self.alerts[symbol].info}")
+                    alert_triggered = True
+
+            if not alert_triggered:
+                print(f"nothing to report, sleeping for {interval} seconds")
+            time.sleep(interval)
+            alert_triggered = False
+
+    def configure_alert(self, symbol: str, alert: BaseAlert) -> None:
+        self.alerts[symbol] = alert
 
     @staticmethod
     def read_stock_list(path: str) -> list[str]:

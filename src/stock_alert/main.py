@@ -4,7 +4,7 @@ import sys
 import pandas as pd
 import yfinance as yf
 
-from stock_alert.class_stock_alert import StockAlert
+from stock_alert.class_stock_alert import AlertRelativeDailyChange, StockAlert
 from stock_alert.util import get_stock_ticker
 
 
@@ -59,7 +59,8 @@ def main() -> None:
     # symbols = get_stock_symbols(stock_list)
 
     alert = StockAlert(args.path_stock_list)
-    print(alert.opening_prices)
+    alert.configure_alert(alert.stock_symbols[0], AlertRelativeDailyChange(0.01))
+    alert.spin(5)
 
 
 if __name__ == "__main__":
