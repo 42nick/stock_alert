@@ -10,4 +10,4 @@
     "python.analysis.autoImportCompletions": true,
     "python.analysis.autoImportUserSymbols": true,
     "python.formatting.provider": "black",
-}                    
+}

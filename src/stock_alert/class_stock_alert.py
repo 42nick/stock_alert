@@ -146,10 +146,6 @@ class StockAlert:
         # showing a progress bar with the stock symbols with a fixed string size
         for stock in pbar:
             pbar.set_description(f"Getting stock symbol for {stock}".ljust(50))
-            #     symbol = get_stock_ticker(stock)
-            #     stock_symbols.append(get_stock_ticker(stock)) if symbol else None
-
-            # for stock in stock_list:
             symbol = get_stock_ticker(stock)
             stock_symbols.append(get_stock_ticker(stock)) if symbol else None
         return stock_symbols
