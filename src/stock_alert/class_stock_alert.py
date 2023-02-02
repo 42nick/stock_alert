@@ -7,13 +7,14 @@ import tqdm
 import yfinance
 
 from stock_alert.util import get_stock_ticker
+from yfinance.ticker import Ticker
 
 
 class BaseAlert:
     def __init__(self) -> None:
         self.info = ""
 
-    def need_alert(self, ticker: yfinance.Ticker):
+    def need_alert(self, ticker: yfinance.Ticker) -> bool:
         raise NotImplementedError
 
 
@@ -21,7 +22,7 @@ class NoAlert(BaseAlert):
     def __init__(self) -> None:
         super().__init__()
 
-    def need_alert(self, ticker: yfinance.Ticker):
+    def need_alert(self, ticker: yfinance.Ticker) -> bool:
         return False
 
 
@@ -35,7 +36,7 @@ class AlertRelativeDailyChange(BaseAlert):
 
         self.info = ""
 
-    def need_alert(self, ticker: yfinance.Ticker):
+    def need_alert(self, ticker: yfinance.Ticker) -> bool:
         df = ticker.history(period="1d", interval="5m")
         opening_price = df.iloc[0]["Open"]
 
@@ -57,10 +58,11 @@ class AbsolutHigherThan(BaseAlert):
         self.threshold = threshold
         self.info = ""
 
-    def need_alert(self, ticker: yfinance.Ticker):
+    def need_alert(self, ticker: yfinance.Ticker) -> bool:
         if ticker.history(period="1d", interval="5m").iloc[-1]["Close"] > self.threshold:
             self.info = f"Stock price is higher than {self.threshold}"
             return True
+        return False
 
 
 class AbsolutLowerThan(BaseAlert):
@@ -69,10 +71,11 @@ class AbsolutLowerThan(BaseAlert):
         self.threshold = threshold
         self.info = ""
 
-    def need_alert(self, ticker: yfinance.Ticker):
+    def need_alert(self, ticker: yfinance.Ticker) -> bool:
         if ticker.history(period="1d", interval="5m").iloc[-1]["Close"] < self.threshold:
             self.info = f"Stock price is lower than {self.threshold}"
             return True
+        return False
 
 
 class StockAlert:
@@ -125,7 +128,7 @@ class StockAlert:
             self.configure_alert(symbol, alert)
 
     @staticmethod
-    def read_stock_list(path: str) -> list[str]:
+    def read_stock_list(path: Path) -> list[str]:
         """
         Read the stock list from a file.
         """

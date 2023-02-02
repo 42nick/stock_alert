@@ -1,8 +1,9 @@
-import urllib.request
+from typing import Any
 import json
+import urllib.request
 
 
-def get_json_stock_info(raw_stock_name: str) -> dict:
+def get_json_stock_info(raw_stock_name: str) -> dict[str, Any]:
     """
     Get the stock information from the yahoo finance.
     """

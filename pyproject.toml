@@ -76,3 +76,4 @@ data_file = "reports/.coverage"
 [tool.mypy]
 strict = true
 warn_return_any = false
+ignore_missing_imports = true
