@@ -13,7 +13,8 @@
             "justMyCode": true,
             "args": [
                 "--path-stock-list",
-                "/home/hahn/dev_repos/stock_alert/data/stock-list.txt",
+                // "/home/hahn/dev_repos/stock_alert/data/stock-list.txt",
+                "/home/hahn/dev_repos/stock_alert/data/tr_cleaned.txt",
             ],
         }
     ]

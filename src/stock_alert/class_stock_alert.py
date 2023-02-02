@@ -1,7 +1,9 @@
 import time
 from lib2to3.pytree import Base
+from os import P_NOWAIT
 from pathlib import Path
 
+import tqdm
 import yfinance
 
 from stock_alert.util import get_stock_ticker
@@ -9,7 +11,7 @@ from stock_alert.util import get_stock_ticker
 
 class BaseAlert:
     def __init__(self) -> None:
-        pass
+        self.info = ""
 
     def need_alert(self, ticker: yfinance.Ticker):
         raise NotImplementedError
@@ -49,6 +51,30 @@ class AlertRelativeDailyChange(BaseAlert):
         return True
 
 
+class AbsolutHigherThan(BaseAlert):
+    def __init__(self, threshold: float) -> None:
+        super().__init__()
+        self.threshold = threshold
+        self.info = ""
+
+    def need_alert(self, ticker: yfinance.Ticker):
+        if ticker.history(period="1d", interval="5m").iloc[-1]["Close"] > self.threshold:
+            self.info = f"Stock price is higher than {self.threshold}"
+            return True
+
+
+class AbsolutLowerThan(BaseAlert):
+    def __init__(self, threshold: float) -> None:
+        super().__init__()
+        self.threshold = threshold
+        self.info = ""
+
+    def need_alert(self, ticker: yfinance.Ticker):
+        if ticker.history(period="1d", interval="5m").iloc[-1]["Close"] < self.threshold:
+            self.info = f"Stock price is lower than {self.threshold}"
+            return True
+
+
 class StockAlert:
     def __init__(self, path_to_csv: Path) -> None:
 
@@ -64,31 +90,39 @@ class StockAlert:
         self.stock_tickers = self.get_stock_tickers(self.stock_symbols)
 
         # getting the opening price of the stock of today via yahoo finance
-        self.opening_prices = self.get_opening_prices()
+        # self.opening_prices = self.get_opening_prices()  # TODO not needed currently
 
         # ggf. checking cyclically if the stock price has reached a certain threshold
 
         # setting up the alerts
-        self.alerts = {symbol: NoAlert() for symbol in self.stock_symbols}
+        self.alerts: dict[str, BaseAlert] = {symbol: NoAlert() for symbol in self.stock_symbols}
 
-    def spin(self, interval: float) -> None:
+    def spin(self, interval: float = 60) -> None:
         """
-        This function checks cyclically if the stock price has reached a certain threshold.
+        This function checks cyclically for all given stocks whether their alert is raised.
         """
         while True:
             alert_triggered = False
-            for symbol, ticker in zip(self.stock_symbols, self.stock_tickers):
+            for idx, (symbol, ticker) in enumerate(zip(self.stock_symbols, self.stock_tickers)):
                 if self.alerts[symbol].need_alert(ticker):
-                    print(f"Alert for {symbol}: {self.alerts[symbol].info}")
+                    print(f"Alert for {self.stock_list[idx]}: {self.alerts[symbol].info}")
                     alert_triggered = True
 
             if not alert_triggered:
                 print(f"nothing to report, sleeping for {interval} seconds")
-            time.sleep(interval)
+
+            pbar = tqdm.tqdm(range(200), colour="green", bar_format="{l_bar}{bar:50}|")
+            for _ in pbar:
+                pbar.set_description(f"Waiting for {interval} seconds")
+                time.sleep(interval / 200)
             alert_triggered = False
 
     def configure_alert(self, symbol: str, alert: BaseAlert) -> None:
         self.alerts[symbol] = alert
+
+    def configure_same_alert_for_all(self, alert: BaseAlert) -> None:
+        for symbol in self.stock_symbols:
+            self.configure_alert(symbol, alert)
 
     @staticmethod
     def read_stock_list(path: str) -> list[str]:
@@ -106,8 +140,18 @@ class StockAlert:
         Get the stock symbols via the yahoo finance.
         """
         stock_symbols = []
-        for stock in stock_list:
-            stock_symbols.append(get_stock_ticker(stock))
+
+        pbar = tqdm.tqdm(stock_list, colour="green")
+
+        # showing a progress bar with the stock symbols with a fixed string size
+        for stock in pbar:
+            pbar.set_description(f"Getting stock symbol for {stock}".ljust(50))
+            #     symbol = get_stock_ticker(stock)
+            #     stock_symbols.append(get_stock_ticker(stock)) if symbol else None
+
+            # for stock in stock_list:
+            symbol = get_stock_ticker(stock)
+            stock_symbols.append(get_stock_ticker(stock)) if symbol else None
         return stock_symbols
 
     @staticmethod
