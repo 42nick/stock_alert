@@ -8,7 +8,7 @@ version = "0.0.1"
 readme = "README.md"
 requires-python = ">=3.7"
 license = { text = "MIT License" }
-dependencies = ["yfinance", "pandas", "tqdm"]
+dependencies = ["yfinance", "pandas", "tqdm", "google-api-python-client", "google-auth-httplib2", "google-auth-oauthlib"]
 [project.optional-dependencies]
 dev = ["stock_alert[test]", "stock_alert[docs]", "tox"]
 test = ["pytest", "pytest-cov", "coverage", "black", "isort", "pylint", "mypy"]

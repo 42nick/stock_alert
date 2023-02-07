@@ -6,8 +6,8 @@ from pathlib import Path
 import tqdm
 import yfinance
 
+from stock_alert.quickstart import send_mail
 from stock_alert.util import get_stock_ticker
-from yfinance.ticker import Ticker
 
 
 class BaseAlert:
@@ -38,6 +38,11 @@ class AlertRelativeDailyChange(BaseAlert):
 
     def need_alert(self, ticker: yfinance.Ticker) -> bool:
         df = ticker.history(period="1d", interval="5m")
+
+        if df.empty:
+            print(f"Empty dataframe for {ticker.ticker}")
+            return False
+
         opening_price = df.iloc[0]["Open"]
 
         relative_change = df.iloc[-1]["Close"] / opening_price
@@ -79,7 +84,8 @@ class AbsolutLowerThan(BaseAlert):
 
 
 class StockAlert:
-    def __init__(self, path_to_csv: Path) -> None:
+    def __init__(self, path_to_csv: Path, receiver_mail: str = "") -> None:
+        self.receiver_mail = receiver_mail
 
         # ------------ loading the stocks and gathering info from the web ------------ #
 
@@ -111,6 +117,12 @@ class StockAlert:
                     print(f"Alert for {self.stock_list[idx]}: {self.alerts[symbol].info}")
                     alert_triggered = True
 
+                    if self.receiver_mail:
+                        send_mail(
+                            receiver_email=self.receiver_mail,
+                            message_content=self.alerts[symbol].info,
+                            subject=self.stock_list[idx],
+                        )
             if not alert_triggered:
                 print(f"nothing to report, sleeping for {interval} seconds")
 

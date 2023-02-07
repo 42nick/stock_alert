@@ -1,4 +1,5 @@
 import argparse
+import os
 import sys
 
 from stock_alert.class_stock_alert import AlertRelativeDailyChange, StockAlert
@@ -19,9 +20,9 @@ def main() -> None:
     args = parse_args(sys.argv[1:])
     print(args)
 
-    alert = StockAlert(args.path_stock_list)
+    alert = StockAlert(args.path_stock_list, receiver_mail=os.environ["TEST_MAIL"])
     alert.configure_same_alert_for_all(AlertRelativeDailyChange(0.03))
-    alert.spin(10)
+    alert.spin(30)
 
 
 if __name__ == "__main__":
