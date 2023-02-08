@@ -7,7 +7,7 @@ import tqdm
 import yfinance
 
 from stock_alert.quickstart import send_mail
-from stock_alert.util import get_stock_ticker
+from stock_alert.util import get_stock_ticker, hours_to_seconds
 
 
 class BaseAlert:
@@ -83,9 +83,22 @@ class AbsolutLowerThan(BaseAlert):
         return False
 
 
+class ReminderHandler:
+    def __init__(self, remind_interval_h: float) -> None:
+        self.remind_interval_s = hours_to_seconds(remind_interval_h)
+        self.last_reminder = time.time() - self.remind_interval_s
+
+    def need_reminder(self) -> bool:
+        if time.time() - self.last_reminder > self.remind_interval_s:
+            self.last_reminder = time.time()
+            return True
+        return False
+
+
 class StockAlert:
-    def __init__(self, path_to_csv: Path, receiver_mail: str = "") -> None:
+    def __init__(self, path_to_csv: Path, receiver_mail: str = "", remind_interval_h: float = 24) -> None:
         self.receiver_mail = receiver_mail
+        self.remind_interval_h = remind_interval_h
 
         # ------------ loading the stocks and gathering info from the web ------------ #
 
@@ -105,6 +118,9 @@ class StockAlert:
 
         # setting up the alerts
         self.alerts: dict[str, BaseAlert] = {symbol: NoAlert() for symbol in self.stock_symbols}
+        self.remind_handlers: dict[str, ReminderHandler] = {
+            symbol: ReminderHandler(self.remind_interval_h) for symbol in self.stock_symbols
+        }
 
     def spin(self, interval: float = 60) -> None:
         """
@@ -113,7 +129,7 @@ class StockAlert:
         while True:
             alert_triggered = False
             for idx, (symbol, ticker) in enumerate(zip(self.stock_symbols, self.stock_tickers)):
-                if self.alerts[symbol].need_alert(ticker):
+                if self.alerts[symbol].need_alert(ticker) and self.remind_handlers[symbol].need_reminder():
                     print(f"Alert for {self.stock_list[idx]}: {self.alerts[symbol].info}")
                     alert_triggered = True
 

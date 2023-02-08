@@ -5,7 +5,7 @@
 - [ ] Add tests
 - [ ] Add mail client who sends alerts to the user
 - [ ] stock visualization, some dash app
-- [ ] 
+- [ ] store stock symbols 
 
 ## Building the docs
 ```

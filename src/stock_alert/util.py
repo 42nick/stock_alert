@@ -1,6 +1,13 @@
-from typing import Any
 import json
 import urllib.request
+from typing import Any
+
+
+def hours_to_seconds(hours: float) -> float:
+    """
+    Convert hours to seconds.
+    """
+    return hours * 3600
 
 
 def get_json_stock_info(raw_stock_name: str) -> dict[str, Any]:
