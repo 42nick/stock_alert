@@ -3,9 +3,9 @@
 
 ## Todo
 - [ ] Add tests
-- [ ] Add mail client who sends alerts to the user
+- [x] Add mail client who sends alerts to the user
 - [ ] stock visualization, some dash app
-- [ ] store stock symbols 
+- [x] store stock symbols 
 
 ## Building the docs
 ```

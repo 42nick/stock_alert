@@ -96,6 +96,8 @@ class ReminderHandler:
 
 
 class StockAlert:
+    stock_symbol_mapping_filename = "stock_symbol_mapping.csv"
+
     def __init__(self, path_to_csv: Path, receiver_mail: str = "", remind_interval_h: float = 24) -> None:
         self.receiver_mail = receiver_mail
         self.remind_interval_h = remind_interval_h
@@ -105,8 +107,30 @@ class StockAlert:
         # read the stock list from a file
         self.stock_list = self.read_stock_list(path_to_csv)
 
+        # if the stock symbol mapping file exists, load it and check for missing stocks
+        stock_symbol_mapping_filepath = Path(
+            path_to_csv.as_posix().replace(path_to_csv.name, StockAlert.stock_symbol_mapping_filename)
+        )
+        symbols = []
+        if stock_symbol_mapping_filepath.exists():
+            with open(stock_symbol_mapping_filepath, "r") as file:
+                symbols = []
+                for idx, line in enumerate(file.read().splitlines()):
+                    stock, symbol = line.split(",")
+                    if stock != self.stock_list[idx]:
+                        print("Order of stocks in csv file has changed. Recreating the symbol mapping file.")
+                        stock_symbol_mapping_filepath.unlink()
+                        break
+                    symbols.append(symbol)
+            if symbols:
+                print("Loaded stock symbol mapping file.")
         # get the stock symbols via yahoo finance
-        self.stock_symbols = self.get_stock_symbols(self.stock_list)
+        self.stock_symbols = self.get_stock_symbols(self.stock_list) if not symbols else symbols
+
+        # store symbols in csv for faster loading
+        with open(str(path_to_csv).replace(path_to_csv.name, StockAlert.stock_symbol_mapping_filename), "w") as file:
+            for stock, symbol in zip(self.stock_list, self.stock_symbols):
+                file.write(f"{stock},{symbol}\n")
 
         # storing the stock tickers from yahoo finance
         self.stock_tickers = self.get_stock_tickers(self.stock_symbols)
@@ -170,6 +194,7 @@ class StockAlert:
         """
         Get the stock symbols via the yahoo finance.
         """
+
         stock_symbols = []
 
         pbar = tqdm.tqdm(stock_list, colour="green")

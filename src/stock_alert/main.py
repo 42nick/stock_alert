@@ -1,6 +1,6 @@
 import argparse
-import os
 import sys
+from pathlib import Path
 
 from stock_alert.class_stock_alert import AlertRelativeDailyChange, StockAlert
 
@@ -20,7 +20,8 @@ def main() -> None:
     args = parse_args(sys.argv[1:])
     print(args)
 
-    alert = StockAlert(args.path_stock_list, receiver_mail=os.environ["TEST_MAIL"], remind_interval_h=1 / 70)
+    alert = StockAlert(Path(args.path_stock_list), receiver_mail="", remind_interval_h=1 / 70)
+    # alert = StockAlert(Path(args.path_stock_list), receiver_mail=os.environ["TEST_MAIL"], remind_interval_h=1 / 70)
     alert.configure_same_alert_for_all(AlertRelativeDailyChange(0.03))
     alert.spin(30)
 
