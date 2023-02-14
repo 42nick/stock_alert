@@ -44,13 +44,14 @@ class AlertRelativeDailyChange(BaseAlert):
             return False
 
         opening_price = df.iloc[0]["Open"]
+        closing_price = df.iloc[-1]["Close"]
 
-        relative_change = df.iloc[-1]["Close"] / opening_price
+        relative_change = closing_price / opening_price
 
         if relative_change < self.lower_bound:
-            self.info = f"Stock price has decreased by {100 * (1 - relative_change):.2f} %"
+            self.info = f"Stock price has decreased by {100 * (1 - relative_change):.2f} % falling from {opening_price:.2f} to {closing_price:.2f} {ticker.fast_info['currency']}."
         elif relative_change > self.upper_bound:
-            self.info = f"Stock price has increased by {100 * (relative_change - 1):.2f} %"
+            self.info = f"Stock price has increased by {100 * (relative_change - 1):.2f} % rising from {opening_price:.2f} to {closing_price:.2f} {ticker.fast_info['currency']}."
         else:
             return False
 
@@ -105,7 +106,7 @@ class StockAlert:
         # ------------ loading the stocks and gathering info from the web ------------ #
 
         # read the stock list from a file
-        self.stock_list = self.read_stock_list(path_to_csv)
+        stock_list = self.read_stock_list(path_to_csv)
 
         # if the stock symbol mapping file exists, load it and check for missing stocks
         stock_symbol_mapping_filepath = Path(
@@ -117,33 +118,29 @@ class StockAlert:
                 symbols = []
                 for idx, line in enumerate(file.read().splitlines()):
                     stock, symbol = line.split(",")
-                    if stock != self.stock_list[idx]:
+                    if stock != stock_list[idx]:
                         print("Order of stocks in csv file has changed. Recreating the symbol mapping file.")
                         stock_symbol_mapping_filepath.unlink()
                         break
                     symbols.append(symbol)
             if symbols:
                 print("Loaded stock symbol mapping file.")
+
         # get the stock symbols via yahoo finance
-        self.stock_symbols = self.get_stock_symbols(self.stock_list) if not symbols else symbols
+        stock_symbols = self.get_stock_symbols(stock_list) if not symbols else symbols
 
         # store symbols in csv for faster loading
         with open(str(path_to_csv).replace(path_to_csv.name, StockAlert.stock_symbol_mapping_filename), "w") as file:
-            for stock, symbol in zip(self.stock_list, self.stock_symbols):
+            for stock, symbol in zip(stock_list, stock_symbols):
                 file.write(f"{stock},{symbol}\n")
 
         # storing the stock tickers from yahoo finance
-        self.stock_tickers = self.get_stock_tickers(self.stock_symbols)
-
-        # getting the opening price of the stock of today via yahoo finance
-        # self.opening_prices = self.get_opening_prices()  # TODO not needed currently
-
-        # ggf. checking cyclically if the stock price has reached a certain threshold
+        self.stock_tickers = self.get_stock_tickers(stock_symbols)
 
         # setting up the alerts
-        self.alerts: dict[str, BaseAlert] = {symbol: NoAlert() for symbol in self.stock_symbols}
+        self.alerts: dict[str, BaseAlert] = {symbol: NoAlert() for symbol in stock_symbols}
         self.remind_handlers: dict[str, ReminderHandler] = {
-            symbol: ReminderHandler(self.remind_interval_h) for symbol in self.stock_symbols
+            symbol: ReminderHandler(self.remind_interval_h) for symbol in stock_symbols
         }
 
     def spin(self, interval: float = 60) -> None:
@@ -152,16 +149,16 @@ class StockAlert:
         """
         while True:
             alert_triggered = False
-            for idx, (symbol, ticker) in enumerate(zip(self.stock_symbols, self.stock_tickers)):
+            for idx, (symbol, ticker) in enumerate(self.stock_tickers.items()):
                 if self.alerts[symbol].need_alert(ticker) and self.remind_handlers[symbol].need_reminder():
-                    print(f"Alert for {self.stock_list[idx]}: {self.alerts[symbol].info}")
+                    stock_name = ticker.info["longName"]
+                    print(f"Alert for {stock_name:<40}: {self.alerts[symbol].info}")
                     alert_triggered = True
-
                     if self.receiver_mail:
                         send_mail(
                             receiver_email=self.receiver_mail,
                             message_content=self.alerts[symbol].info,
-                            subject=self.stock_list[idx],
+                            subject=stock_name,
                         )
             if not alert_triggered:
                 print(f"nothing to report, sleeping for {interval} seconds")
@@ -170,13 +167,12 @@ class StockAlert:
             for _ in pbar:
                 pbar.set_description(f"Waiting for {interval} seconds")
                 time.sleep(interval / 200)
-            alert_triggered = False
 
     def configure_alert(self, symbol: str, alert: BaseAlert) -> None:
         self.alerts[symbol] = alert
 
     def configure_same_alert_for_all(self, alert: BaseAlert) -> None:
-        for symbol in self.stock_symbols:
+        for symbol in self.stock_tickers.keys():
             self.configure_alert(symbol, alert)
 
     @staticmethod
@@ -203,15 +199,15 @@ class StockAlert:
         for stock in pbar:
             pbar.set_description(f"Getting stock symbol for {stock}".ljust(50))
             symbol = get_stock_ticker(stock)
-            stock_symbols.append(get_stock_ticker(stock)) if symbol else None
+            stock_symbols.append(get_stock_ticker(stock) if symbol else "N/A")
         return stock_symbols
 
     @staticmethod
-    def get_stock_tickers(stock_symbols: list[str]) -> list[yfinance.Ticker]:
+    def get_stock_tickers(stock_symbols: list[str]) -> dict[str, yfinance.Ticker]:
         """
         Get the stock tickers via the yahoo finance.
         """
-        return [yfinance.Ticker(symbol) for symbol in stock_symbols]
+        return {symbol: yfinance.Ticker(symbol) for symbol in stock_symbols if symbol != "N/A"}
 
     def get_opening_prices(self) -> list[float]:
         """
