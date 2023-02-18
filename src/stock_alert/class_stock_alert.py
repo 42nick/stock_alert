@@ -151,7 +151,14 @@ class StockAlert:
             alert_triggered = False
             for idx, (symbol, ticker) in enumerate(self.stock_tickers.items()):
                 if self.alerts[symbol].need_alert(ticker) and self.remind_handlers[symbol].need_reminder():
-                    stock_name = ticker.info["longName"]
+                    try:
+                        if "longName" not in ticker.info:
+                            stock_name = symbol
+                        else:
+                            stock_name = ticker.info["longName"]
+                    except Exception as e:
+                        print(f"Error while getting stock name for {symbol}: {e}")
+                        stock_name = symbol
                     print(f"Alert for {stock_name:<40}: {self.alerts[symbol].info}")
                     alert_triggered = True
                     if self.receiver_mail:
