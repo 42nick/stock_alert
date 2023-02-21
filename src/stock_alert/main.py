@@ -2,7 +2,8 @@ import argparse
 import sys
 from pathlib import Path
 
-from stock_alert.class_stock_alert import AlertRelativeDailyChange, StockAlert
+from stock_alert.alerts import AlertRelativeDailyChange
+from stock_alert.class_stock_alert import StockAlert
 
 
 def parse_args(args: list[str]) -> argparse.Namespace:
