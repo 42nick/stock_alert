@@ -8,9 +8,21 @@ from stock_alert.class_stock_alert import AlertRelativeDailyChange, StockAlert
 def parse_args(args: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--path-stock-list", help="Path to the file containing a .txt file the stocks of to watch", type=str
+        "--path-stock-list",
+        help="Path to the file containing a .txt file the stocks of to watch",
+        type=str,
+        required=True,
     )
-    return parser.parse_args(args)
+
+    args, undesired = parser.parse_known_args(args)
+
+    if undesired is not None and len(undesired) > 0:
+        raise argparse.ArgumentError(None, f"Undesired arguments: {undesired}")
+
+    if Path(args.path_stock_list).is_file() is False:
+        raise FileNotFoundError(f"File {args.path_stock_list} does not exist")
+
+    return args
 
 
 def main() -> None:

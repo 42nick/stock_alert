@@ -11,4 +11,9 @@
     "python.analysis.autoImportUserSymbols": true,
     "python.formatting.provider": "black",
     "cmake.configureOnOpen": false,
+    "python.testing.pytestArgs": [
+        "tests"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
 }
