@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, Mock, patch
 
 import yfinance
 
-from stock_alert.alerts import AlertRelativeDailyChange, BaseAlert, NoAlert
+from stock_alert.alerts import AbsolutHigherThan, AbsolutLowerThan, AlertRelativeDailyChange, BaseAlert, NoAlert
 
 
 class TestBaseAlert(unittest.TestCase):
@@ -85,3 +85,66 @@ class TestAlertRelativeDailyChange(unittest.TestCase):
 
         # Check that need_alert returns False
         self.assertFalse(alert.need_alert(ticker_mock))
+
+        # mimic the case where the ticker is not available
+        mock_df.empty = True
+        ticker_mock.ticker = "TEST"
+        self.assertFalse(alert.need_alert(ticker_mock))
+
+
+class TestAbsolutHigherThan(unittest.TestCase):
+    def test_need_alert_true(self):
+        """Test that need_alert returns True when the ticker price is higher than the threshold."""
+        threshold = 100
+        ticker_mock = MagicMock()
+        mock_df = Mock()
+        mock_df.iloc = [{"Close": 102}]
+        ticker_mock.history.return_value = mock_df
+
+        alert = AbsolutHigherThan(threshold)
+        result = alert.need_alert(ticker_mock)
+
+        self.assertTrue(result)
+        self.assertEqual(alert.info, f"Stock price is higher than {threshold}")
+
+    def test_need_alert_false(self):
+        """Test that need_alert returns False when the ticker price is lower than the threshold."""
+        threshold = 100
+        ticker_mock = MagicMock()
+        mock_df = Mock()
+        mock_df.iloc = [{"Close": 90}]
+        ticker_mock.history.return_value = mock_df
+        alert = AbsolutHigherThan(threshold)
+        result = alert.need_alert(ticker_mock)
+
+        self.assertFalse(result)
+        self.assertEqual(alert.info, "")
+
+
+class TestAbsolutLowerThan(unittest.TestCase):
+    def test_need_alert_true(self):
+        """Test that need_alert returns True when the ticker price is higher than the threshold."""
+        threshold = 100
+        ticker_mock = MagicMock()
+        mock_df = Mock()
+        mock_df.iloc = [{"Close": 99}]
+        ticker_mock.history.return_value = mock_df
+
+        alert = AbsolutLowerThan(threshold)
+        result = alert.need_alert(ticker_mock)
+
+        self.assertTrue(result)
+        self.assertEqual(alert.info, f"Stock price is lower than {threshold}")
+
+    def test_need_alert_false(self):
+        """Test that need_alert returns False when the ticker price is lower than the threshold."""
+        threshold = 100
+        ticker_mock = MagicMock()
+        mock_df = Mock()
+        mock_df.iloc = [{"Close": 120}]
+        ticker_mock.history.return_value = mock_df
+        alert = AbsolutLowerThan(threshold)
+        result = alert.need_alert(ticker_mock)
+
+        self.assertFalse(result)
+        self.assertEqual(alert.info, "")
